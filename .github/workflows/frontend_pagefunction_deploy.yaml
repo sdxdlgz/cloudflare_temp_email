@@ -18,14 +18,13 @@ jobs:
       - name: Check PAGE_TOML
         id: check
         run: |
-          if [ -n "$PAGE_TOML" ] && [ -n "$FRONTEND_NAME" ]; then
+          if [ -n "$PAGE_TOML" ]; then
             echo "has_config=true" >> $GITHUB_OUTPUT
           else
             echo "has_config=false" >> $GITHUB_OUTPUT
           fi
         env:
           PAGE_TOML: ${{ secrets.PAGE_TOML }}
-          FRONTEND_NAME: ${{ secrets.FRONTEND_NAME }}
 
   deploy:
     needs: check
@@ -54,9 +53,8 @@ jobs:
           cd ../pages/
           echo '${{ secrets.PAGE_TOML }}' > wrangler.toml
           pnpm install --no-frozen-lockfile
-          pnpm exec wrangler pages deploy --branch production --project-name "$FRONTEND_NAME"
+          pnpm run deploy
           echo "Deploying production for ${{ github.ref_name }}"
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          FRONTEND_NAME: ${{ secrets.FRONTEND_NAME }}
