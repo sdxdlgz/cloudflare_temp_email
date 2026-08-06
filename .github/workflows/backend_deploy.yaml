@@ -12,6 +12,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
       has_config: ${{ steps.check.outputs.has_config }}
     steps:
