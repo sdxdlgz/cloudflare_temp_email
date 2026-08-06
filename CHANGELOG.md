@@ -12,6 +12,8 @@
 
 ### Bug Fixes
 
+- fix: |CI| Skip the backend deploy job when `BACKEND_TOML` secret is not configured, avoiding workflow failures caused by generating an empty `worker/wrangler.toml`
+
 ### Improvements
 
 ## v1.10.0

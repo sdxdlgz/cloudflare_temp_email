@@ -10,7 +10,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      has_config: ${{ steps.check.outputs.has_config }}
+    steps:
+      - name: Check BACKEND_TOML
+        id: check
+        run: |
+          if [ -n "$BACKEND_TOML" ]; then
+            echo "has_config=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_config=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          BACKEND_TOML: ${{ secrets.BACKEND_TOML }}
+
   deploy:
+    needs: check
+    if: ${{ needs.check.outputs.has_config == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

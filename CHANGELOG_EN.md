@@ -12,6 +12,8 @@
 
 ### Bug Fixes
 
+- fix: |CI| 当未配置 `BACKEND_TOML` secret 时跳过后端部署任务，避免写入空 `worker/wrangler.toml` 导致 workflow 失败
+
 ### Improvements
 
 ## v1.10.0
