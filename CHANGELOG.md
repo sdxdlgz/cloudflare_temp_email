@@ -25,6 +25,7 @@
 
 ### Bug Fixes
 
+- fix: |CI| 修复 Pages Function 部署工作流在未显式提供 `FRONTEND_NAME` 时仍尝试按默认 `temp-email-pages` 部署导致失败的问题；现仅在 `PAGE_TOML` 与 `FRONTEND_NAME` 同时存在时执行，并显式使用 `FRONTEND_NAME` 作为 Pages 项目名
 - fix: |Frontend| 关闭邮件外部图片自动加载时保留 `<a>` 与 `<area>` 的外部导航链接，并阻断通过 CSS 转义函数名或 at-rule 绕过远程资源过滤的情况
 - fix: |Frontend| 使用共享 DOMPurify 净化逻辑处理关于页面与启动通知中的 HTML 公告，避免 `ANNOUNCEMENT` 中的可执行标签或事件属性造成 XSS
 - fix: |Worker| 按邮件认证规范修复垃圾邮件检测：SPF、DKIM、DMARC 的 `none` 及 SPF/DKIM `neutral` 按认证方法不存在处理，并忽略未注册结果和不支持的方法版本；`JUNK_MAIL_FORCE_PASS_LIST` 仍要求明确返回受支持的 `pass`

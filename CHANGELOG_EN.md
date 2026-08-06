@@ -25,6 +25,7 @@
 
 ### Bug Fixes
 
+- fix: |CI| Fix Pages Function deploy workflow failures caused by attempting to deploy to the default `temp-email-pages` project without an explicit `FRONTEND_NAME`; deployment now runs only when both `PAGE_TOML` and `FRONTEND_NAME` are present, and always uses `FRONTEND_NAME` as the Pages project name
 - fix: |Frontend| Preserve external navigation links on `<a>` and `<area>` elements when automatic remote-image loading is disabled, and block remote CSS resources hidden behind escaped function or at-rule names
 - fix: |Frontend| Sanitize HTML announcements in both the About page and startup notification through a shared DOMPurify helper, preventing executable tags or event attributes in `ANNOUNCEMENT` from causing XSS
 - fix: |Worker| Align junk-mail checking with authentication standards: treat SPF, DKIM, and DMARC `none` plus SPF/DKIM `neutral` as absent, and ignore unregistered results and unsupported method versions; `JUNK_MAIL_FORCE_PASS_LIST` still requires an explicit supported `pass`
