@@ -1,0 +1,100 @@
+name: Fix Pages Production Branch
+
+# Manual only. Does not build or deploy the application.
+"on":
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  fix-pages-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify project and set its production branch
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.error
+          import urllib.request
+
+          PROJECT = "temp-email-pages"
+          EXPECTED_DOMAIN = "temp-email-pages-8wr.pages.dev"
+          TARGET_BRANCH = "production"
+          account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+          token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
+          if not re.fullmatch(r"[0-9a-fA-F]{32}", account) or not token:
+              raise SystemExit("Missing or invalid Cloudflare account/token secrets.")
+
+          url = (
+              "https://api.cloudflare.com/client/v4/accounts/"
+              + account + "/pages/projects/" + PROJECT
+          )
+
+          # Never forward the credential to a redirect target.
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          opener = urllib.request.build_opener(NoRedirect)
+
+          def call_api(method, payload=None):
+              request = urllib.request.Request(
+                  url,
+                  data=json.dumps(payload).encode() if payload is not None else None,
+                  headers={
+                      "Authorization": "Bearer " + token,
+                      "Content-Type": "application/json",
+                  },
+                  method=method,
+              )
+              try:
+                  with opener.open(request, timeout=30) as response:
+                      result = json.load(response)
+              except urllib.error.HTTPError as exc:
+                  # Do not print the full API response: it may include configuration.
+                  raise SystemExit(
+                      f"Cloudflare HTTP {exc.code}. Check account, project and Pages permissions."
+                  ) from None
+              except (urllib.error.URLError, TimeoutError, ValueError):
+                  raise SystemExit("Cloudflare request failed or returned invalid JSON.") from None
+              if not isinstance(result, dict) or result.get("success") is not True:
+                  raise SystemExit("Cloudflare reported an API failure. No success assumed.")
+              project = result.get("result")
+              if not isinstance(project, dict):
+                  raise SystemExit("Unexpected Cloudflare project response.")
+              return project
+
+          current = call_api("GET")
+          if current.get("name") != PROJECT or current.get("subdomain") != EXPECTED_DOMAIN:
+              raise SystemExit("Project/domain mismatch. Stopped without changing anything.")
+
+          previous = current.get("production_branch")
+          print("Verified project:", PROJECT)
+          print("Previous production branch:", json.dumps(previous))
+          if previous != TARGET_BRANCH:
+              # This is the ONLY configuration field this task changes.
+              call_api("PATCH", {"production_branch": TARGET_BRANCH})
+          verified = call_api("GET")
+          if verified.get("production_branch") != TARGET_BRANCH:
+              raise SystemExit("Could not verify the new branch. Recheck before redeploying.")
+
+          print("Verified production branch: production")
+          print("NEXT: manually run 'Deploy Frontend with page function' on main.")
+          print("This task did not upload files, deploy a Worker, or modify bindings/D1/DNS.")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as out:
+                  out.write("## Pages production branch verified\n\n")
+                  out.write("Project: `temp-email-pages`\n\n")
+                  out.write("Production branch: `production`\n\n")
+                  out.write("Now manually run **Deploy Frontend with page function** on **main**.\n")
+                  out.write("This task only changes the branch setting; it does not deploy the site.\n")
+          PY
